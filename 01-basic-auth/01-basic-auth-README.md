@@ -643,7 +643,7 @@ http -a admin:secret123 GET http://localhost:5000/api/data
 import requests
 from requests.auth import HTTPBasicAuth
 
-BASE_URL = "http://localhost:5000"
+BASE_URL = "http://localhost:5001"
 
 # 方式 1: 使用 HTTPBasicAuth 类
 resp = requests.get(f"{BASE_URL}/api/data",
@@ -675,6 +675,14 @@ print(f"Failed body: {resp.json()}")
 
 ```bash
 python test_client.py
+(venv) vma@300-31272-MAC python % python test_client.py
+Status: 200
+Body: {'data': ['item1', 'item2', 'item3'], 'message': 'Hello, admin!'}
+Body: {'data': ['item1', 'item2', 'item3'], 'message': 'Hello, admin!'}
+Sent header: Basic YWRtaW46c2VjcmV0MTIz
+Decoded: admin:secret123
+Failed status: 401
+Failed body: {'error': 'Access denied'}
 ```
 
 ### 我们学到了什么？
