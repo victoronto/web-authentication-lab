@@ -628,7 +628,7 @@ python app.py
 
 ```bash
 # 用 curl 测试
-curl -u admin:secret123 http://localhost:5000/api/data
+curl -u admin:secret123 http://localhost:5001/api/data
 
 # 用 HTTPie 测试（更简洁的语法）
 http -a admin:secret123 GET http://localhost:5000/api/data
