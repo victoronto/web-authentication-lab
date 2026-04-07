@@ -12,6 +12,8 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "passport": "^0.7.0",
+    "passport-http": "^0.3.0"
   }
 }
