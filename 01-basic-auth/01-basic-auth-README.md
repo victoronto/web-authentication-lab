@@ -245,7 +245,53 @@ curl -u admin:wrongpassword http://localhost:3000/api/data
 
 # 测试 6: 详细模式 — 观察完整的 HTTP 请求和响应
 curl -v -u admin:secret123 http://localhost:3000/api/data
+* Host localhost:3000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+*   Trying [::1]:3000...
+* Connected to localhost (::1) port 3000
+* Server auth using Basic with user 'admin'
+> GET /api/data HTTP/1.1
+> Host: localhost:3000
+> Authorization: Basic YWRtaW46c2VjcmV0MTIz
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+* Request completely sent off
+< HTTP/1.1 200 OK
+< X-Powered-By: Express
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 60
+< ETag: W/"3c-k3sc4W4qzr25o3y64k+aS8Y8KaM"
+< Date: Tue, 07 Apr 2026 19:23:00 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+* Connection #0 to host localhost left intact
+{"message":"Hello, admin!","data":["item1","item2","item3"]}%  
 # 观察: > Authorization: Basic YWRtaW46c2VjcmV0MTIz
+curl -v 的输出用三种前缀符号区分不同类型的信息：
+*（星号）— curl 自身的状态信息
+* Host localhost:3000 was resolved.
+* IPv6: ::1
+* Connected to localhost (::1) port 3000
+* Server auth using Basic with user 'admin'
+这些是 curl 告诉你它在做什么：DNS 解析、建立 TCP 连接、使用什么认证方式。这些信息不是 HTTP 协议的一部分，是 curl 作为工具的诊断日志。
+>（大于号）— 你发出去的 HTTP Request
+> GET /api/data HTTP/1.1
+> Host: localhost:3000
+> Authorization: Basic YWRtaW46c2VjcmV0MTIz
+> User-Agent: curl/8.7.1
+> Accept: */*
+箭头朝右 → 数据从你的 MacBook 流向服务器。这就是 Module 01 里讲的 Challenge-Response 流程中第 3 步：客户端发送带 Authorization Header 的请求。你可以看到 curl -u admin:secret123 被自动转换成了 Authorization: Basic YWRtaW46c2VjcmV0MTIz。
+<（小于号）— 服务器返回的 HTTP Response
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 60
+< Date: Tue, 07 Apr 2026 19:23:00 GMT
+箭头朝左 ← 数据从服务器流回你的 MacBook。200 OK 说明认证成功。如果你用错误的密码，这里会看到 < HTTP/1.1 401 Unauthorized 和 < WWW-Authenticate: Basic realm="My Protected API"。
+简单记忆：* = curl 在说话，> = 你发出去的，< = 服务器回来的。
+
 #
 # 现在解码这个值:
 echo "YWRtaW46c2VjcmV0MTIz" | base64 -d
