@@ -740,41 +740,6 @@ base64.b64decode('YWRtaW46c2VjcmV0MTIz').decode()
 
 > **结论：** 任何截获 `Authorization` Header 的人——恶意 Wi-Fi 热点、网络嗅探器、配置错误的代理——都能立即读取你的凭证。这就是为什么 **HTTPS 是强制性的，不是可选的**。
 
-### 演示 2：Timing Attack 与防御
-
-**什么是 Timing Attack？**
-
-普通的 `===` 字符串比较在遇到第一个不匹配的字符时就会返回 `false`。攻击者通过发送大量请求并统计响应时间的微小差异，可以逐字符推断出正确的值——把暴力破解的复杂度从指数级降低到线性级。
-
-**错误写法（有漏洞）：**
-
-```javascript
-// ❌ 危险: === 会短路返回
-if (apiKey === storedApiKey) { /* ... */ }
-```
-
-**正确写法（时间恒定比较）：**
-
-```javascript
-const crypto = require('crypto');
-
-// ✅ 安全: 无论是否匹配，比较时间都相同
-function timingSafeCompare(a, b) {
-  // crypto.timingSafeEqual 要求两个 Buffer 长度相同
-  // 先用 SHA-256 哈希来统一长度
-  const hashA = crypto.createHash('sha256').update(String(a)).digest();
-  const hashB = crypto.createHash('sha256').update(String(b)).digest();
-  return crypto.timingSafeEqual(hashA, hashB);
-}
-
-// 使用时：两个比较都要执行，不要提前返回
-const usernameMatch = timingSafeCompare(username, 'admin');
-const passwordMatch = timingSafeCompare(password, 'secret123');
-if (usernameMatch && passwordMatch) { /* 授权 */ }
-```
-
-> **注意：** `bcrypt.compare()` 内部已经是 timing-safe 的（因为它无论匹配与否都会执行完整的 bcrypt 运算）。`crypto.timingSafeEqual` 主要用于直接比较字符串/Token/API Key 的场景。
-
 ### 演示 3：浏览器凭证缓存（No Logout 问题）
 
 浏览器在 Basic Auth 成功后会**缓存凭证在内存中**，自动附加到同一 authentication scope 内的所有后续请求。
@@ -840,6 +805,11 @@ echo "YWRtaW46c2VjcmV0MTIz" | base64 -d
 ### HTTPie 命令
 
 ```bash
+brew install httpie    
+# It will install another version of python3, but it doesn't have a higher priority, so we can leave it there just for httpie.
+% which python3                                                                  
+/Users/vma/.pyenv/shims/python3
+
 # 默认就是 Basic Auth
 http -a admin:secret123 GET http://localhost:3000/api/data
 
@@ -891,9 +861,7 @@ OWASP Authentication Cheat Sheet 不推荐在生产 Web 应用中使用 Basic Au
 - [ ] 强制 HTTPS（所有认证页面和受保护端点）
 - [ ] 正确返回 `WWW-Authenticate` Header（RFC 7235 要求）
 - [ ] 使用 `crypto.timingSafeEqual` 或 `bcrypt.compare` 做时间恒定比较
-- [ ] 即使用户名不存在，也执行密码比较（防止 Timing-based 用户名枚举）
 - [ ] 实现 Rate Limiting（按 IP 和 username 双键限制）
-- [ ] 部署 HSTS Header 防止 SSL Stripping 攻击
 
 ### 概念自查
 
@@ -901,8 +869,6 @@ OWASP Authentication Cheat Sheet 不推荐在生产 Web 应用中使用 Basic Au
 - [ ] 我能在 terminal 中手动编码和解码 Base64
 - [ ] 我理解为什么 Base64 编码 ≠ 加密
 - [ ] 我能解释 Challenge-Response 流程中每一步的 HTTP Header
-- [ ] 我理解为什么 `===` 比较有 Timing Attack 风险
-- [ ] 我知道 `bcrypt.compare()` 为什么是 timing-safe 的
 - [ ] 我能解释为什么 Basic Auth 没有真正的 Logout 机制
 - [ ] 我知道 Basic Auth 适合和不适合的使用场景
 
