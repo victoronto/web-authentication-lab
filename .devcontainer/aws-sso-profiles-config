@@ -1,0 +1,144 @@
+[profile dxp]
+sso_session = lower-sso
+sso_account_id = 246881029821
+[profile dxt]
+sso_session = lower-sso
+sso_account_id = 455229194933
+[profile rdxp]
+sso_session = altus-readonly
+sso_account_id = 246881029821
+[profile rdxt]
+sso_session = altus-readonly
+sso_account_id = 455229194933
+
+[profile vgt]
+sso_session = lower-sso
+sso_account_id = 116697024364
+[profile vgp]
+sso_session = idam-sso
+sso_role_name = app-IDAM-liveops-poweruser
+sso_account_id = 749502138985
+
+[profile rvgt]
+sso_session = altus-readonly
+sso_account_id = 116697024364
+[profile rvgp]
+sso_session = altus-readonly
+sso_account_id = 749502138985
+
+[profile ads]
+sso_session = idam-sso
+sso_account_id = 483859030234
+
+[profile vyt]
+sso_session = idam-sso
+sso_account_id = 985988425364
+[profile vyp]
+sso_session = idam-sso
+sso_account_id = 175270427579
+[profile app-dev]
+sso_session = lower-sso
+sso_account_id = 593323888852
+[profile app-qa]
+sso_session = lower-sso
+sso_account_id = 047733448766
+[profile app-stg]
+sso_session = lower-sso
+sso_account_id = 985375688340
+[profile app-prod]
+sso_session = lower-sso
+sso_account_id = 344994055973
+[profile app-sb]
+sso_session = lower-sso
+sso_account_id = 416753405277
+[profile app-ci]
+sso_session = lower-sso
+sso_account_id = 574041070244
+[profile app-noc]
+sso_session = lower-sso
+sso_account_id = 391356633612
+
+[profile stratodem-p]
+sso_session = lower-sso
+sso_account_id = 149681870049
+
+[profile stratodem-q]
+sso_session = lower-sso
+sso_account_id = 891377353795
+
+[profile stratodem-d]
+sso_session = lower-sso
+sso_account_id = 851725540925
+
+[profile app-opsp]
+sso_session = idam-sso
+sso_role_name = app-IDAM-liveops-poweruser
+sso_account_id = 891377155254
+
+[sso-session altus-readonly]
+sso_start_url = https://d-936775737c.awsapps.com/start#/
+sso_region = eu-west-1
+sso_role_name = app-liveops-readonly
+region = eu-west-1
+output = json
+max_attempts = 1
+s3 =
+    max_concurrent_requests = 20
+    max_queue_size = 10000
+    multipart_threshold = 64MB
+    multipart_chunksize = 16MB
+
+[sso-session altus-sso]
+sso_start_url = https://d-936775737c.awsapps.com/start#/
+sso_region = eu-west-1
+sso_role_name = app-liveops-poweruser
+region = eu-west-1
+output = json
+max_attempts = 1
+s3 =
+    max_concurrent_requests = 20
+    max_queue_size = 10000
+    multipart_threshold = 64MB
+    multipart_chunksize = 16MB
+
+[sso-session lower-sso]
+sso_start_url = https://d-936775737c.awsapps.com/start#/
+sso_region = eu-west-1
+sso_registration_scopes = sso:account:access
+sso_role_name = app-liveops-power-user
+output = json
+max_attempts = 1
+s3 =
+max_concurrent_requests = 20
+max_queue_size = 10000
+multipart_threshold = 64MB
+multipart_chunksize = 16MB
+
+[sso-session idam-sso]
+sso_start_url = https://d-936775737c.awsapps.com/start#/
+sso_region = eu-west-1
+sso_registration_scopes = sso:account:access
+sso_role_name = app-IDAM-liveops-poweruser
+output = json
+max_attempts = 1
+s3 =
+max_concurrent_requests = 20
+max_queue_size = 10000
+multipart_threshold = 64MB
+multipart_chunksize = 16MB
+
+
+
+[profile at-slt]
+sso_session = altus-sso
+sso_account_id = 130709677343
+
+
+
+[profile tap]
+sso_session = altus-sso
+sso_account_id = 340164186334
+
+[profile rmt]
+sso_session = altus-sso
+sso_account_id = 652197721728

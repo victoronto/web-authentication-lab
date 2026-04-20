@@ -1,0 +1,31 @@
+{
+  "name": "cfn-tag-checker",
+  "build": {
+    "dockerfile": "Dockerfile", // Dockerfile 路径（相对于 .devcontainer/）
+    "context": ".." // Docker build context 路径（相对于 .devcontainer/）
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "redhat.vscode-yaml",
+        "mhutchie.git-graph"
+      ]
+    }
+  },
+  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt",
+  "remoteUser": "vscode"
+}
