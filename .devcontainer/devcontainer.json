@@ -1,9 +1,13 @@
 {
-  "name": "cfn-tag-checker",
+  "name": "DooD Dev Container (from scratch)",
   "build": {
     "dockerfile": "Dockerfile", // Dockerfile 路径（相对于 .devcontainer/）
     "context": ".." // Docker build context 路径（相对于 .devcontainer/）
   },
+  // 关键：挂载宿主机 docker socket
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
   },
@@ -22,6 +26,7 @@
         "ms-python.debugpy",
         "charliermarsh.ruff",
         "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker",
         "mhutchie.git-graph"
       ]
     }

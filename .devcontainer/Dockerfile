@@ -28,6 +28,35 @@ RUN pip install \
     pip_system_certs
 # ─── End Zscaler Fix ─────────────────────────────────────────
 
+# 安装基础依赖（HTTPS、GPG、证书）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# 添加 Docker 官方 GPG Key
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg \
+        | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && chmod a+r /etc/apt/keyrings/docker.gpg
+
+# 添加 Docker 官方 APT 仓库
+RUN . /etc/os-release \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+       https://download.docker.com/linux/debian ${VERSION_CODENAME} stable" \
+       > /etc/apt/sources.list.d/docker.list
+
+# 只装 CLI 和 compose plugin，不装 docker-ce（那是 daemon）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        docker-ce-cli \
+        docker-compose-plugin \
+        docker-buildx-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
+# 把 vscode 加进 root 组（GID 0），因为 OrbStack 的 socket 由 root 拥有
+RUN usermod -aG root vscode
+
 COPY .devcontainer/install-aws-commandlines.sh /tmp/install-aws-commandlines.sh
 RUN echo ">>> Install AWS CLIs <<<" \
     && chmod +x /tmp/install-aws-commandlines.sh \
@@ -36,3 +65,4 @@ RUN echo ">>> Install AWS CLIs <<<" \
 ADD  --chown=vscode:vscode .devcontainer/amazon-root-ca-1.pem /home/vscode/.aws/amazon-root-ca-1.pem
 ADD  --chown=vscode:vscode .devcontainer/aws-sso-profiles-config /home/vscode/.aws/config
 ENV AWS_CA_BUNDLE=/home/vscode/.aws/amazon-root-ca-1.pem
+
