@@ -191,219 +191,36 @@ npm install express express-session connect-redis redis bcrypt
 ### Step 2：从零构建 Session Auth（不用 Passport）
 
 **为什么先不用 Passport？** 跟 Module 01 一样——先理解底层机制。你需要知道 `express-session` 做了什么、Session ID 是怎么生成的、Cookie 是怎么设置的，才能真正理解 Passport 在此基础上提供了什么。
+创建 `server-raw.js`
 
-创建 `server-raw.js`：
-
-```javascript
-// server-raw.js — 手动实现 Session Auth，不依赖 Passport
-import express from 'express';
-import session from 'express-session';
-import { RedisStore } from 'connect-redis';
-import { createClient } from 'redis';
-import bcrypt from 'bcrypt';
-
-const app = express();
-app.use(express.json()); // 解析 JSON 请求体
-const PORT = 3000;
-
-// ============================================
-// 1. 连接 Redis
-// ============================================
-const redisClient = createClient({ url: 'redis://localhost:6379' });
-redisClient.connect().catch(console.error);
-
-redisClient.on('connect', () => console.log('Redis connected'));
-redisClient.on('error', (err) => console.error('Redis error:', err));
-
-// ============================================
-// 2. 配置 Session Middleware
-// ============================================
-const redisStore = new RedisStore({
-  client: redisClient,
-  prefix: 'sess:',  // Redis 中 key 的前缀
-});
-
-app.use(session({
-  store: redisStore,
-  secret: 'change-me-to-a-strong-random-string', // 用于签名 Session ID Cookie
-  name: 'sessionId',        // 重命名 Cookie（默认是 "connect.sid"）
-  resave: false,            // 没有修改时不重新保存（必须显式设置）
-  saveUninitialized: false, // 未登录的用户不创建 Session（必须显式设置）
-  cookie: {
-    httpOnly: true,         // 阻止 JavaScript 访问 Cookie
-    secure: false,          // 开发环境用 false（生产环境改为 true）
-    sameSite: 'lax',        // CSRF 纵深防御
-    maxAge: 1000 * 60 * 30, // 30 分钟 idle timeout
-  },
-}));
-
-// ============================================
-// 3. 模拟用户数据库（生产环境用真实数据库）
-// ============================================
-const users = {};
-
-async function initUsers() {
-  const SALT_ROUNDS = 12;
-  users['admin@example.com'] = {
-    id: 1,
-    email: 'admin@example.com',
-    passwordHash: await bcrypt.hash('secret123', SALT_ROUNDS),
-    role: 'admin',
-  };
-  users['viewer@example.com'] = {
-    id: 2,
-    email: 'viewer@example.com',
-    passwordHash: await bcrypt.hash('readonly456', SALT_ROUNDS),
-    role: 'viewer',
-  };
-  console.log('Users initialized');
-}
-
-// ============================================
-// 4. 认证 Middleware — 检查 Session 是否有效
-// ============================================
-const requireAuth = (req, res, next) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: 'Not authenticated. Please login first.' });
-  }
-  next();
-};
-
-// ============================================
-// 5. Absolute Timeout Middleware
-// ============================================
-const ABSOLUTE_TIMEOUT = 8 * 60 * 60 * 1000; // 8 小时
-
-const checkAbsoluteTimeout = (req, res, next) => {
-  if (req.session.createdAt) {
-    const elapsed = Date.now() - req.session.createdAt;
-    if (elapsed > ABSOLUTE_TIMEOUT) {
-      return req.session.destroy((err) => {
-        if (err) return next(err);
-        res.clearCookie('sessionId');
-        return res.status(401).json({ error: 'Session expired (absolute timeout)' });
-      });
-    }
-  }
-  next();
-};
-
-app.use(checkAbsoluteTimeout);
-
-// ============================================
-// 6. 路由
-// ============================================
-
-// 公开端点
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// 登录
-app.post('/login', async (req, res, next) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required' });
-  }
-
-  const user = users[email];
-
-  // Timing Attack 防御：即使用户不存在也执行 bcrypt.compare
-  const dummyHash = '$2b$12$LJ3m4ys3Lk0TSwHjpF2gT.UzIR3WH9CPNRGK/7e7e3jY3CSJiXZ2e';
-  const isMatch = await bcrypt.compare(password, user?.passwordHash || dummyHash);
-
-  if (!user || !isMatch) {
-    return res.status(401).json({ error: 'Invalid email or password' });
-  }
-
-  // ★ 关键：登录成功后 regenerate Session ID，防御 Session Fixation
-  req.session.regenerate((err) => {
-    if (err) return next(err);
-
-    // 在新 Session 中存储用户信息
-    req.session.userId = user.id;
-    req.session.email = user.email;
-    req.session.role = user.role;
-    req.session.createdAt = Date.now(); // 用于 Absolute Timeout
-
-    // 显式保存（确保在发送响应之前 Session 已写入 Redis）
-    req.session.save((err) => {
-      if (err) return next(err);
-      console.log(`Login: ${email}, new session: ${req.session.id}`);
-      res.json({
-        message: 'Login successful',
-        user: { id: user.id, email: user.email, role: user.role },
-      });
-    });
-  });
-});
-
-// 登出
-app.post('/logout', (req, res, next) => {
-  const sessionId = req.session.id;
-
-  // ★ 关键：服务端销毁 Session（不仅仅是删除客户端 Cookie）
-  req.session.destroy((err) => {
-    if (err) return next(err);
-    res.clearCookie('sessionId'); // 清除客户端的 Cookie
-    console.log(`Logout: session ${sessionId} destroyed`);
-    res.json({ message: 'Logged out successfully' });
-  });
-});
-
-// 受保护端点 — 查看个人信息
-app.get('/api/profile', requireAuth, (req, res) => {
-  res.json({
-    userId: req.session.userId,
-    email: req.session.email,
-    role: req.session.role,
-    sessionCreatedAt: new Date(req.session.createdAt).toISOString(),
-  });
-});
-
-// 受保护端点 — 模拟笔记 CRUD
-app.get('/api/notes', requireAuth, (req, res) => {
-  res.json({
-    notes: [
-      { id: 1, title: 'Learn Session Auth', body: 'Understand cookies and sessions' },
-      { id: 2, title: 'Redis as Session Store', body: 'Never use MemoryStore in production' },
-    ],
-    user: req.session.email,
-  });
-});
-
-// 查看当前 Session 信息（调试用）
-app.get('/debug/session', requireAuth, (req, res) => {
-  res.json({
-    sessionId: req.session.id,
-    cookie: req.session.cookie,
-    data: {
-      userId: req.session.userId,
-      email: req.session.email,
-      role: req.session.role,
-      createdAt: req.session.createdAt,
-    },
-  });
-});
-
-// ============================================
-// 7. 启动服务器
-// ============================================
-initUsers().then(() => {
-  app.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
-});
-```
-
+#### troubleshooting
 > **关于 ES Modules：** 上面的代码使用了 `import` 语法。你需要在 `package.json` 中添加 `"type": "module"`，或者把所有 `import` 改成 `require`。如果你用 `require`：
-> ```javascript
-> const express = require('express');
-> const session = require('express-session');
-> const { RedisStore } = require('connect-redis');
-> const { createClient } = require('redis');
-> const bcrypt = require('bcrypt');
-> ```
-> Module 01 用的是 `require`（CommonJS），这里我们切换到 `import`（ES Modules）让你接触两种风格。两种方式功能完全一样，只是语法不同。
+```javascript
+const express = require('express');
+const session = require('express-session');
+const { RedisStore } = require('connect-redis');
+const { createClient } = require('redis');
+const bcrypt = require('bcrypt');
+```
+Module 01 用的是 `require`（CommonJS），这里我们切换到 `import`（ES Modules）让你接触两种风格。两种方式功能完全一样，只是语法不同。
+```bash
+vscode ➜ /workspaces/web-authentication-lab/02-session-auth/node (2) $ node server-raw.js
+(node:18146) Warning: Failed to load the ES module: /workspaces/web-authentication-lab/02-session-auth/node/server-raw.js. Make sure to set "type": "module" in the nearest package.json file or use the .mjs extension.
+(Use node --trace-warnings ... to show where the warning was created)
+/workspaces/web-authentication-lab/02-session-auth/node/server-raw.js:2
+import express from 'express';
+^^^^^^
+SyntaxError: Cannot use import statement outside a module
+    at wrapSafe (node:internal/modules/cjs/loader:1763:18)
+    at Module._compile (node:internal/modules/cjs/loader:1804:20)
+    at Object..js (node:internal/modules/cjs/loader:1961:10)
+    at Module.load (node:internal/modules/cjs/loader:1553:32)
+    at Module._load (node:internal/modules/cjs/loader:1355:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47
+Node.js v24.15.0
+```
 
 ### Step 3：运行并测试
 
@@ -486,7 +303,6 @@ curl -v -b cookies.txt http://localhost:3000/api/notes
 # > Cookie: sessionId=s%3A...
 #   ↑ 客户端自动附带 Cookie
 ```
-
 ### 我们学到了什么？
 
 对比 Module 01 的 `curl -u admin:secret123`：
