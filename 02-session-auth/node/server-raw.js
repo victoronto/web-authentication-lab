@@ -189,6 +189,47 @@ app.get('/debug/session', requireAuth, (req, res) => {
         },
     });
 });
+import { csrfSync } from 'csrf-sync';
+
+// ============================================
+// CSRF 配置
+// ============================================
+const {
+    generateToken,                 // 生成 CSRF Token
+    csrfSynchronisedProtection,    // 验证 CSRF Token 的 Middleware
+    invalidCsrfTokenError,         // Token 无效时的错误对象
+} = csrfSync({
+    getTokenFromRequest: (req) => req.headers['x-csrf-token'], // 从 Header 获取 Token
+});
+
+// 获取 CSRF Token 的端点（登录后调用）
+app.get('/csrf-token', (req, res) => {
+    const token = generateToken(req, res);
+    res.json({ csrfToken: token });
+});
+
+// 对 state-changing 请求应用 CSRF 保护
+// csrf-sync 自动跳过 GET, HEAD, OPTIONS 请求
+app.post('/api/notes', requireAuth, csrfSynchronisedProtection, (req, res) => {
+    const { title, body } = req.body;
+    res.status(201).json({ message: 'Note created', note: { title, body } });
+});
+
+app.post('/logout', csrfSynchronisedProtection, (req, res, next) => {
+    req.session.destroy((err) => {
+        if (err) return next(err);
+        res.clearCookie('sessionId');
+        res.json({ message: 'Logged out' });
+    });
+});
+
+// CSRF 错误处理
+app.use((err, req, res, next) => {
+    if (err === invalidCsrfTokenError) {
+        return res.status(403).json({ error: 'Invalid or missing CSRF token' });
+    }
+    next(err);
+});
 
 // ============================================
 // 7. 启动服务器
