@@ -12,7 +12,7 @@ app.use(express.json());
 const PORT = 3002;
 
 // Redis + Session 配置（同前）
-const redisClient = createClient({ url: 'redis://localhost:6379' });
+const redisClient = createClient({ url: 'redis://host.docker.internal:6379' });
 redisClient.connect().catch(console.error);
 
 app.use(session({
