@@ -45,9 +45,9 @@ export NVM_DIR="$HOME/.nvm"
 nvm current
 # 如果显示 "none" 或 "system"，说明没有选择版本
 
-# 4. 列出已安装的 Node.js 版本
+# 4. 列出已安装的 Node.js 版本, if nvm 已经装了但还没安装任何 Node.js 版本。装一个 LTS 版本就行
 nvm ls
-
+nvm install --lts
 # 5. 如果有版本但没激活，选择一个
 nvm use --lts
 # 或者指定版本: nvm use 20

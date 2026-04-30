@@ -39,7 +39,7 @@ Wow, it created so many files, give me gitignore contect to ignore those I shoul
 2:58 PM
 这个问题很直接，不需要 research，我可以直接给你。
 
-bash
+```bash
 # 在你的 repo 根目录创建 .gitignore
 cat > .gitignore << 'EOF'
 # Dependencies
@@ -72,6 +72,7 @@ venv/
 dist/
 build/
 EOF
+```
 简单解释一下每一组：
 
 node_modules/ — 这就是你看到的那几千个文件。这是 npm install 下载的所有依赖，任何人都可以通过 npm install 从 package.json 重新生成，所以不需要提交到 Git。
@@ -121,14 +122,29 @@ npm ci               # 严格按 package-lock.json 安装，不做任何修改
 npm ci 是 CI/CD pipeline 中的最佳实践——它更快（删除整个 node_modules/ 重建）而且更严格（保证跟 lock file 完全一致）。以你的 AWS DevOps 背景，这个在 GitHub Actions 或 CodePipeline 里会经常用到。
 
 总结
-bash
+```bash
 # .gitignore 中：
 node_modules/        # ✅ 忽略（几千个文件，可重新生成）
 
 # 应该提交到 Git 的：
 package.json         # ✅ 提交（声明"我需要什么"）
 package-lock.json    # ✅ 提交（锁定"我用的是什么精确版本"）
+```
 
-
-
-
+## Troubleshooting
+```bash
+$ npm install express express-session connect-redis redis bcrypt
+npm error code UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+npm error errno UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+npm error request to https://registry.npmjs.org/bcrypt failed, reason: unable to get local issuer certificate
+npm error A complete log of this run can be found in: /home/vscode/.npm/_logs/2026-04-30T02_33_23_645Z-debug-0.log
+```
+10:41 PMClaude responded: 这是 SSL 证书问题——你的 devcontainer 可能在公司网络或代理后面，npm 无法验证 registry 的 SSL 证书。这是 SSL 证书问题——你的 devcontainer 可能在公司网络或代理后面，npm 无法验证 registry 的 SSL 证书。
+快速修复（开发环境可以接受）：
+```bash
+bashnpm config set strict-ssl false
+# 然后重新跑：
+bashnpm install express express-session connect-redis redis bcrypt
+# 装完后如果想恢复严格模式：
+bashnpm config set strict-ssl true
+```
