@@ -135,6 +135,8 @@ npm init -y
 ```bash
 npm install express better-sqlite3 express-rate-limit
 ```
+跟之前一样的 SSL 证书问题——better-sqlite3 需要下载预编译二进制文件或编译 C++ 代码，两步都因为 SSL 证书失败了。
+之前 npm config set strict-ssl false 只对 npm registry 生效，但 node-gyp 和 prebuild-install 有自己的 HTTP 请求。全局关掉 SSL 验证 `export NODE_TLS_REJECT_UNAUTHORIZED=0`then do npm install ... again.
 
 **包说明：**
 
