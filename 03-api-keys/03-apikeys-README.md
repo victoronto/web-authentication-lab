@@ -539,6 +539,7 @@ curl -H "x-api-key: <你的旧API Key>" \
 ### 在 SQLite 中检查 API Key 数据
 
 ```bash
+sudo apt-get update && sudo apt-get install -y sqlite3
 # 用 sqlite3 命令行工具查看数据库
 sqlite3 03-api-keys/node/apikeys.db
 
