@@ -342,7 +342,7 @@ cd 04-jwt-auth/python
 
 python3 -m venv venv
 source venv/bin/activate
-pip install Flask PyJWT cryptography
+pip install Flask PyJWT cryptography bcrypt
 ```
 
 **包说明：**
